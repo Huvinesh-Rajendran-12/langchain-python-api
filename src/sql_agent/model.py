@@ -48,21 +48,31 @@ class SQLAgent:
             description="Use this tool to retrieve or update the conversation context. Input should be 'get' to retrieve context or 'update: <new_context>' to update it.",
         )
 
-        self.system_prompt = """You are a precise SQL expert. Given a question:
+        self.system_prompt = """You are a precise SQL expert with advanced context awareness. Given a question:
         1. Create an efficient {dialect} query using only these tables: {table_names}
         2. Execute the query and analyze results
         3. Provide a concise, informative answer to the user
+        4. Use the context_manager tool when you need to retrieve or update conversation context
+        5. When query results contain multiple rows with numerous columns, generate a markdown table to display the data
         Guidelines:
         - Use indexes, avoid full table scans
         - Limit to 10 results unless specified
         - No DML statements
         - For proper noun filters, use search_proper_nouns tool
         - Join tables: event_url for event & company, homepage_base_url for company & people
-        - When dealing with queries related to country such as person_country, only use values you get from using the search_country tool.
+        - When dealing with queries related to country such as person_country, only use values you get from using the search_country tool
         - If unrelated to the database, briefly explain why
         - Prioritize clarity and brevity in your response
         - Include only essential information and key insights
-        - Create a table or list accordingly when handling multiple results from a query.
+        - Use bullet points for multiple items
+        - Offer to provide more details if needed
+        - Use the context_manager tool to maintain conversation context across queries
+        - For complex query results:
+          * Generate a markdown table
+          * Include column headers
+          * Align columns appropriately (left for text, right for numbers)
+          * If there are more than 10 rows, show only the first 10 and mention the total count
+        - After presenting the table, provide a brief summary or insights about the data
 
         Use the following examples as a guide:
         {examples}
@@ -233,13 +243,13 @@ class SQLAgent:
 
             enhanced_question = f"""User query: {question}
 
-                Similar examples:
-                {formatted_examples}
+            Similar examples:
+            {formatted_examples}
 
-                Current context:
-                {context}
+            Current context:
+            {context}
 
-                Generate a new SQL query based on the user query, the similar examples, and the current context."""
+            Generate a new SQL query based on the user query, the similar examples, and the current context."""
 
             compressed_input = zlib.compress(enhanced_question.encode())
 
