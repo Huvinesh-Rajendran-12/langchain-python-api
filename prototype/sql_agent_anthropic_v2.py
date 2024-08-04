@@ -33,24 +33,28 @@ llm = ChatAnthropic(
     temperature=0,
     api_key=anthropic_api_key,
     cache=True,
-    max_tokens_to_sample=1000
+    max_tokens_to_sample=1000,
 )
 
 embeddings = HuggingFaceEmbeddings()
 
+
 def initialize_vector_stores(db):
     country_vector_store = FAISS.from_texts(
         [row[0] for row in db.run("SELECT DISTINCT person_country FROM people")],
-        embeddings
+        embeddings,
     )
     return country_vector_store
 
+
 country_vector_store = initialize_vector_stores(db)
+
 
 # Function to search countries
 def search_country(query, top_k=5):
     results = country_vector_store.similarity_search(query, k=top_k)
     return [doc.page_content for doc in results]
+
 
 # Optimized system prompt
 system = """You are a precise SQL expert. Given a question:
@@ -70,11 +74,9 @@ Guidelines:
 - Use bullet points for multiple items
 - Offer to provide more details if needed"""
 
-prompt = ChatPromptTemplate.from_messages([
-    ("system", system),
-    ("human", "{input}"),
-    MessagesPlaceholder("agent_scratchpad")
-])
+prompt = ChatPromptTemplate.from_messages(
+    [("system", system), ("human", "{input}"), MessagesPlaceholder("agent_scratchpad")]
+)
 
 tools = [
     search_country,
@@ -87,7 +89,7 @@ agent = create_sql_agent(
     prompt=prompt,
     agent_type="tool-calling",
     verbose=True,
-    additional_tools=tools
+    additional_tools=tools,
 )
 
 # Set up vector store for semantic search
@@ -95,16 +97,18 @@ embeddings = HuggingFaceEmbeddings()
 docs = [Document(page_content=table) for table in db.get_table_names()]
 vector_store = FAISS.from_documents(docs, embeddings)
 
+
 def search_proper_nouns(query):
     results = vector_store.similarity_search(query, k=1)
     return results[0].page_content if results else None
 
+
 # Client-side caching
 query_cache = {}
 table_schemas = {
-    'company': 'clu,clt,cn,rte,eu,cr,ne,cp,cfy,ca,ci,co,hu,lcu,hbu,clue,clmf,cc',
-    'event': 'elu,en,esd,eed,ev,ec,ed,eu,ei',
-    'people': 'i,fn,mn,ln,jt,pc,ps,pco,ep,hbu,dcj,dcc,ea,ev,fn,ycj'
+    "company": "clu,clt,cn,rte,eu,cr,ne,cp,cfy,ca,ci,co,hu,lcu,hbu,clue,clmf,cc",
+    "event": "elu,en,esd,eed,ev,ec,ed,eu,ei",
+    "people": "i,fn,mn,ln,jt,pc,ps,pco,ep,hbu,dcj,dcc,ea,ev,fn,ycj",
 }
 
 # Query batching
@@ -112,8 +116,10 @@ query_queue = deque()
 MAX_BATCH_SIZE = 5
 BATCH_TIMEOUT = 60  # seconds
 
+
 def enqueue_query(query):
     query_queue.append((query, time.time()))
+
 
 def process_query_batch():
     batch = []
@@ -129,20 +135,25 @@ def process_query_batch():
         return rate_limited_agent_invoke(combined_query)
     return None
 
+
 # Compression
 def compress_input(input_text):
     return zlib.compress(input_text.encode())
 
+
 def decompress_output(compressed_output):
     return zlib.decompress(compressed_output).decode()
+
 
 # Progressive loading
 def get_summary_results(full_results, limit=3):
     return full_results[:limit]
 
+
 # Rate limiting
 last_call_time = 0
 min_delay = 1  # Minimum delay between API calls in seconds
+
 
 def rate_limited_agent_invoke(input_text):
     global last_call_time
@@ -170,20 +181,24 @@ def rate_limited_agent_invoke(input_text):
         print(f"Error occurred: {e}")
         return None
 
+
 # Example usage
-user_input = "List the email address for the people working in Singapore for more than a year."
+user_input = (
+    "List the email address for the people working in Singapore for more than a year."
+)
 enqueue_query(user_input)
 message = process_query_batch()
 
 if message:
-    full_results = message['output']
+    full_results = message["output"]
     summary_results = get_summary_results(full_results)
     print("Summary results:", summary_results)
     print("To see full results, request more details.")
 else:
     print("Failed to get a response from the agent.")
 
+
 # Monitoring and analysis
 def log_token_usage(query, tokens_in, tokens_out):
-    with open('token_usage.log', 'a') as f:
+    with open("token_usage.log", "a") as f:
         f.write(f"{time.time()},{query},{tokens_in},{tokens_out}\n")

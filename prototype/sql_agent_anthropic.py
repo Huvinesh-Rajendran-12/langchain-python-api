@@ -16,16 +16,18 @@ from langchain_core.prompts import (
 load_dotenv()
 
 anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
-db_username = os.getenv('DB_USERNAME')
-db_password = os.getenv('DB_PASSWORD')
-db_host = os.getenv('DB_HOST')
-db_port = os.getenv('DB_PORT')
-db_name = os.getenv('DB_NAME')
+db_username = os.getenv("DB_USERNAME")
+db_password = os.getenv("DB_PASSWORD")
+db_host = os.getenv("DB_HOST")
+db_port = os.getenv("DB_PORT")
+db_name = os.getenv("DB_NAME")
 
-db_url = f'postgresql://{db_username}:{db_password}@{db_host}:{db_port}/{db_name}'
+db_url = f"postgresql://{db_username}:{db_password}@{db_host}:{db_port}/{db_name}"
 db = SQLDatabase.from_uri(db_url)
 
-llm = ChatAnthropic(model="claude-3-5-sonnet-20240620", temperature=0, api_key=anthropic_api_key)
+llm = ChatAnthropic(
+    model="claude-3-5-sonnet-20240620", temperature=0, api_key=anthropic_api_key
+)
 
 system = """You are an agent designed to interact with a SQL database.
 Given an input question, create a syntactically correct {dialect} query to run, then look at the results of the query and return the answer.
@@ -140,4 +142,4 @@ agent = create_sql_agent(
 user_input = "Find me the events that occur in the next 3 months."
 message = agent.invoke({"input": user_input})
 
-print(message['output'][0]['text'])
+print(message["output"][0]["text"])

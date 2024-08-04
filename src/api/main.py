@@ -22,8 +22,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 class Query(BaseModel):
     question: str
+
 
 async def process_query_with_updates(question: str) -> AsyncGenerator[str, None]:
     agent = SQLAgent()
@@ -37,10 +39,15 @@ async def process_query_with_updates(question: str) -> AsyncGenerator[str, None]
     except Exception as e:
         yield json.dumps({"step": "Error", "message": str(e)}) + "\n"
 
+
 @app.post("/query")
 async def query_endpoint(query: Query):
-    return StreamingResponse(process_query_with_updates(query.question), media_type="text/event-stream")
+    return StreamingResponse(
+        process_query_with_updates(query.question), media_type="text/event-stream"
+    )
+
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

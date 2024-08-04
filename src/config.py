@@ -5,6 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # Load environment variables from .env file
 load_dotenv()
 
+
 class Settings(BaseSettings):
     # Database settings
     DB_USERNAME: str = os.getenv("DB_USERNAME", "default_user")
@@ -19,8 +20,12 @@ class Settings(BaseSettings):
 
     # LLM settings
     ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY")
-    ANTHROPIC_LLM_MODEL: str = os.getenv("ANTHROPIC_LLM_MODEL", "claude-3-5-sonnet-20240620")
-    ANTHROPIC_LLM_TEMPERATURE: float = float(os.getenv("ANTHROPIC_LLM_TEMPERATURE", "0"))
+    ANTHROPIC_LLM_MODEL: str = os.getenv(
+        "ANTHROPIC_LLM_MODEL", "claude-3-5-sonnet-20240620"
+    )
+    ANTHROPIC_LLM_TEMPERATURE: float = float(
+        os.getenv("ANTHROPIC_LLM_TEMPERATURE", "0")
+    )
     ANTHROPIC_LLM_MAX_TOKENS: int = int(os.getenv("ANTHROPIC_LLM_MAX_TOKENS", "1000"))
 
     # Caching settings
@@ -30,7 +35,10 @@ class Settings(BaseSettings):
     def DATABASE_URL(self) -> str:
         return f"postgresql://{self.DB_USERNAME}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
+
 
 # Create a global instance of the settings
 settings = Settings()
