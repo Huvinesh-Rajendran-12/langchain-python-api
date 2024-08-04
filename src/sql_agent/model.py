@@ -6,10 +6,10 @@ from langchain_anthropic import ChatAnthropic
 from langchain_community.utilities import SQLDatabase
 from langchain_community.agent_toolkits import create_sql_agent
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.cache import InMemoryCache
+from langchain_community.cache import InMemoryCache
 from langchain.globals import set_llm_cache
 from langchain_community.vectorstores import FAISS
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.schema import Document
 import time
 import zlib
@@ -26,11 +26,11 @@ class SQLAgent:
         self.db = SQLDatabase.from_uri(settings.DATABASE_URL)
 
         self.llm = ChatAnthropic(
-            model=settings.LLM_MODEL,
-            temperature=settings.LLM_TEMPERATURE,
+            model=settings.ANTHROPIC_LLM_MODEL,
+            temperature=settings.ANTHROPIC_LLM_TEMPERATURE,
             api_key=settings.ANTHROPIC_API_KEY,
             cache=settings.ENABLE_CACHE,
-            max_tokens_to_sample=settings.LLM_MAX_TOKENS
+            max_tokens_to_sample=settings.ANTHROPIC_LLM_MAX_TOKENS
         )
 
         self.embeddings = HuggingFaceEmbeddings()
@@ -72,7 +72,7 @@ class SQLAgent:
 
         self.vector_store = self.initialize_table_vector_store()
         self.query_cache = {}
-        self.final_answer = Optional[str] = None
+        self.final_answer: Optional[str] = None
 
     def initialize_vector_stores(self):
             return FAISS.from_texts(
@@ -81,7 +81,7 @@ class SQLAgent:
             )
 
     def initialize_table_vector_store(self):
-        docs = [Document(page_content=table) for table in self.db.get_table_names()]
+        docs = [Document(page_content=table) for table in self.db.get_usable_table_names()]
         return FAISS.from_documents(docs, self.embeddings)
 
     def search_country(self, query, top_k=5):
@@ -124,4 +124,6 @@ class SQLAgent:
     async def get_final_answer(self) -> str:
             if self.final_answer is None:
                 return "No query has been processed yet."
-            return self.final_answer
+            if isinstance(self.final_answer, list):
+                return self.final_answer[0]['text'] if self.final_answer else "No result"
+            return str(self.final_answer)

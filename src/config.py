@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Load environment variables from .env file
 load_dotenv()
@@ -19,26 +19,18 @@ class Settings(BaseSettings):
 
     # LLM settings
     ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY")
-    LLM_MODEL: str = os.getenv("LLM_MODEL", "claude-3-5-sonnet-20240620")
-    LLM_TEMPERATURE: float = float(os.getenv("LLM_TEMPERATURE", "0"))
-    LLM_MAX_TOKENS: int = int(os.getenv("LLM_MAX_TOKENS", "1000"))
+    ANTHROPIC_LLM_MODEL: str = os.getenv("ANTHROPIC_LLM_MODEL", "claude-3-5-sonnet-20240620")
+    ANTHROPIC_LLM_TEMPERATURE: float = float(os.getenv("ANTHROPIC_LLM_TEMPERATURE", "0"))
+    ANTHROPIC_LLM_MAX_TOKENS: int = int(os.getenv("ANTHROPIC_LLM_MAX_TOKENS", "1000"))
 
     # Caching settings
     ENABLE_CACHE: bool = os.getenv("ENABLE_CACHE", "True").lower() == "true"
-    CACHE_TYPE: str = os.getenv("CACHE_TYPE", "in_memory")  # Could be 'in_memory', 'redis', etc.
-
-    # Vector store settings
-    VECTOR_STORE_TYPE: str = os.getenv("VECTOR_STORE_TYPE", "faiss")
-
-    # Logging settings
-    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
 
     @property
     def DATABASE_URL(self) -> str:
         return f"postgresql://{self.DB_USERNAME}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
-    class Config:
-        env_file = ".env"
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 # Create a global instance of the settings
 settings = Settings()
