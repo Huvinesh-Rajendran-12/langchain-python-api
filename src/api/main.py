@@ -1,41 +1,41 @@
-# src/api/main.py
-
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import AsyncGenerator
 import json
 from src.sql_agent.model import SQLAgent
-from typing import Union, List, Dict
 
 app = FastAPI()
+
+origins = [
+    "http://localhost:3000",  # React default port
+    "http://localhost:8000",  # Another common development port
+    "https://yourdomain.com",  # Your production domain
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class Query(BaseModel):
     question: str
 
-class StatusUpdate(BaseModel):
-    step: str
-    message: Union[str, List[Dict[str, Union[str, int]]]]
+async def process_query_with_updates(question: str) -> AsyncGenerator[str, None]:
+    agent = SQLAgent()
 
-sql_agent = SQLAgent()
+    try:
+        async for step, message in agent.process_query(question):
+            yield json.dumps({"step": step, "message": message}) + "\n"
 
-async def process_query_with_updates(question: str):
-    updates_received = False
-    async for step, message in sql_agent.process_query(question):
-        updates_received = True
-        status_update = StatusUpdate(step=step, message=message)
-        yield json.dumps(status_update.model_dump()) + "\n"
-
-    # Final answer
-    result = await sql_agent.get_final_answer()
-    if isinstance(result, list):
-        result = result[0]['text'] if result else "No result"
-    final_update = StatusUpdate(step="Final Answer", message=result)
-    yield json.dumps(final_update.model_dump()) + "\n"
-
-    # If no updates were received, yield an error message
-    if not updates_received:
-        error_update = StatusUpdate(step="Error", message="No updates received from the SQL agent")
-        yield json.dumps(error_update.model_dump()) + "\n"
+        final_answer = await agent.get_final_answer()
+        yield json.dumps({"step": "Final Answer", "message": final_answer}) + "\n"
+    except Exception as e:
+        yield json.dumps({"step": "Error", "message": str(e)}) + "\n"
 
 @app.post("/query")
 async def query_endpoint(query: Query):

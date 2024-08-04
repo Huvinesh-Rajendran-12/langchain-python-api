@@ -187,6 +187,3 @@ else:
 def log_token_usage(query, tokens_in, tokens_out):
     with open('token_usage.log', 'a') as f:
         f.write(f"{time.time()},{query},{tokens_in},{tokens_out}\n")
-
-# Call this function after each successful query
-# log_token_usage(user_input, tokens_in, tokens_out)
