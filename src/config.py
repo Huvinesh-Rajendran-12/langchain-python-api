@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     )
     ANTHROPIC_LLM_MAX_TOKENS: int = int(os.getenv("ANTHROPIC_LLM_MAX_TOKENS", "1000"))
 
+    # Embedding Model settings
+    EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "")
+
     # Caching settings
     ENABLE_CACHE: bool = os.getenv("ENABLE_CACHE", "True").lower() == "true"
 

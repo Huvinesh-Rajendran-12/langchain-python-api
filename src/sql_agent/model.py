@@ -15,6 +15,8 @@ from langchain.schema import Document
 import zlib
 from src.config import settings
 import json
+import pandas as pd
+from tabulate import tabulate
 
 
 class SQLAgent:
@@ -32,7 +34,7 @@ class SQLAgent:
             max_tokens_to_sample=settings.ANTHROPIC_LLM_MAX_TOKENS,
         )
 
-        self.embeddings = HuggingFaceEmbeddings()
+        self.embeddings = HuggingFaceEmbeddings(model_name=settings.EMBEDDING_MODEL)
         self.country_vector_store = self.initialize_vector_stores()
 
         self.example_selector = self._initialize_example_selector()
@@ -74,7 +76,7 @@ class SQLAgent:
             ]
         )
 
-        self.tools = [self.search_country, self.search_proper_nouns]
+        self.tools = [self.context_tool, self.search_country, self.search_proper_nouns]
 
         self.agent = create_sql_agent(
             llm=self.llm,
@@ -82,7 +84,7 @@ class SQLAgent:
             prompt=self.prompt,
             agent_type="tool-calling",
             verbose=True,
-            additional_tools=self.tools,
+            extra_tools=self.tools,
         )
 
         self.vector_store = self.initialize_table_vector_store()
@@ -193,6 +195,31 @@ class SQLAgent:
             formatted += f"Example {i}:\nInput: {example['input']}\nQuery: {example['query']}\n\n"
         return formatted.strip()
 
+    def _format_table(self, data: List[Dict]) -> str:
+        if not data:
+            return "No data available."
+
+        df = pd.DataFrame(data)
+
+        # Determine column alignments
+        alignments = [
+            "left" if df[col].dtype == "object" else "right" for col in df.columns
+        ]
+
+        # Generate the table
+        table = tabulate(
+            df.head(10),
+            headers="keys",
+            tablefmt="pipe",
+            showindex=False,
+            colalign=alignments,
+        )
+
+        if len(df) > 10:
+            table += f"\n\n*Showing 10 out of {len(df)} rows*"
+
+        return table
+
     async def process_query(
         self, question: str
     ) -> AsyncGenerator[Tuple[str, str], None]:
@@ -202,16 +229,24 @@ class SQLAgent:
             similar_examples = self.get_similar_examples(question)
             formatted_examples = self._format_examples(similar_examples)
 
+            context = self._get_context()
+
             enhanced_question = f"""User query: {question}
 
-            Similar examples:
-            {formatted_examples}
+                Similar examples:
+                {formatted_examples}
 
-            Generate a new SQL query based on the user query and the similar examples."""
+                Current context:
+                {context}
+
+                Generate a new SQL query based on the user query, the similar examples, and the current context."""
 
             compressed_input = zlib.compress(enhanced_question.encode())
 
             yield "Processing", "Analyzing the query and generating SQL"
+
+            query_results = None
+            full_response = ""
 
             async for chunk in self.agent.astream(
                 {
@@ -221,13 +256,26 @@ class SQLAgent:
             ):
                 if "actions" in chunk:
                     for action in chunk["actions"]:
+                        if action.tool == "sql_db_query":
+                            query_results = json.loads(action.tool_input)
                         yield "Executing", f"Running action: {action.tool}"
                 elif "intermediate_steps" in chunk:
                     for step in chunk["intermediate_steps"]:
                         yield "Intermediate Step", str(step)
                 elif "output" in chunk:
-                    self.final_answer = chunk["output"]
+                    if (
+                        query_results
+                        and len(query_results) > 1
+                        and len(query_results[0]) > 3
+                    ):
+                        table = self._format_table(query_results)
+                        full_response += f"Here are the query results:\n\n{table}\n\n"
+                    full_response += chunk["output"]
                     yield "Finalizing", "Preparing the final answer"
+
+            self.final_answer = full_response
+            self.last_query_result = full_response
+            self._update_conversation_history(question, full_response)
 
         except Exception as e:
             yield "Error", f"An error occurred: {str(e)}"
