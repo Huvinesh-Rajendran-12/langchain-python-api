@@ -37,8 +37,12 @@ This repository contains the backend API for my ByteGenie FullStack Developer Te
    Create a `.env` file in the root directory and add the following:
 
    ```
-   DATABASE_URL=postgresql://username:password@localhost/bytegenie
-   ANTHROPIC_API_KEY=your_anthropic_api_key
+   export DB_USERNAME=bytegenie_user
+   export DB_PASSWORD=bytegenie_pass
+   export DB_HOST=localhost
+   export DB_PORT=5432
+   export DB_NAME=bytegenie2
+   export ANTHROPIC_API_KEY=your_anthropic_api_key
    ```
 
 5. Initialize the database:
@@ -78,13 +82,52 @@ The API provides the following key functionalities:
 
 ## Key Challenges I Faced
 
-During the development of the API, I faced the following challenges:
+During the development of the API, particularly the SQLAgent component, I encountered several significant challenges:
 
-1. Accurately interpreting natural language queries
-2. Generating efficient SQL queries for complex user requests
-3. Handling edge cases and ambiguous queries
-4. Optimizing response times for large datasets
-5. Ensuring data consistency across different tables
+#### Accurately interpreting natural language queries:
+
+Dealing with ambiguity in user queries was a major hurdle. For example, a query like "Find recent events" could be interpreted in multiple ways (e.g., last week, last month, or last year).
+Handling domain-specific jargon and acronyms required extensive training data and fine-tuning of the language model.
+Maintaining context across multi-turn conversations proved complex, especially when users referred to previous queries or results.
+
+#### Generating efficient SQL queries for complex user requests:
+
+Translating natural language into optimized SQL queries was challenging, especially for complex requests involving multiple joins, subqueries, or aggregations.
+Ensuring that generated queries were efficient and didn't overload the database required careful consideration of query plans and index usage.
+Handling edge cases, such as queries that could potentially return very large result sets, needed special attention to prevent performance issues.
+
+#### Handling edge cases and ambiguous queries:
+
+Dealing with queries that had no clear SQL equivalent or required data not present in the database was challenging.
+Providing meaningful responses to overly broad or vague queries while still offering useful information was a delicate balance.
+Implementing fallback mechanisms for when the primary query generation failed, without compromising the quality of results.
+
+#### Optimizing response times for large datasets:
+
+Implementing efficient caching strategies that balanced fresh data with quick responses was complex.
+Optimizing database queries and result processing for datasets with millions of records required careful tuning and indexing strategies.
+Managing memory efficiently, especially when dealing with large result sets that needed to be processed before returning to the user.
+
+#### Ensuring data consistency across different tables:
+
+Maintaining referential integrity across the events, companies, and people tables, especially with derived data, was challenging.
+Implementing strategies to handle inconsistencies in the source data without breaking the system or producing incorrect results required careful error handling and data cleaning processes.
+
+#### Implementing effective context management for multi-turn conversations:
+
+Designing a system that could effectively store and retrieve relevant context from previous queries in a conversation was complex.
+Balancing the amount of context to retain versus the computational and storage overhead it introduced required careful consideration.
+Determining when to use context and when to treat a query as a new conversation added another layer of complexity.
+
+#### Balancing accuracy with response time:
+
+Finding the right trade-off between the accuracy of natural language understanding and query generation, and the speed of response was a constant challenge.
+Implementing a system that could provide quick responses for simple queries while still being capable of handling complex requests required a multi-tiered approach.
+
+#### Handling data privacy and security concerns:
+
+Implementing measures to prevent SQL injection and other security vulnerabilities without limiting the flexibility of the query system was challenging.
+Ensuring that sensitive data was not inadvertently exposed through query results or error messages required careful consideration of data access patterns.
 
 ## Future Improvements
 
