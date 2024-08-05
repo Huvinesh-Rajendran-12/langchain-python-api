@@ -2,6 +2,60 @@
 
 This repository contains the backend API for my ByteGenie FullStack Developer Test application. The API allows users to interact with events, company, and people data through natural language queries.
 
+## Technology Stack
+
+- Python 3.9+
+- FastAPI
+- SQLAlchemy
+- PostgreSQL
+- Langchain
+- Anthropic Claude API
+
+## Installation and Setup
+
+1. Clone the repository:
+
+   ```
+   git clone https://github.com/your-username/bytegenie-api.git
+   cd bytegenie-api
+   ```
+
+2. Create and activate a virtual environment:
+
+   ```
+   python -m venv venv
+   source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
+   ```
+
+3. Install dependencies:
+
+   ```
+   pip install -r requirements.txt
+   ```
+
+4. Set up environment variables:
+   Create a `.env` file in the root directory and add the following:
+
+   ```
+   DATABASE_URL=postgresql://username:password@localhost/bytegenie
+   ANTHROPIC_API_KEY=your_anthropic_api_key
+   ```
+
+5. Initialize the database:
+
+   ```
+   python scripts/init_db.py
+   ```
+
+6. Run the API:
+   ```
+   uvicorn src.main:app --reload
+   ```
+
+The API should now be running on `http://localhost:8000`.
+
+> > > > > > > 1d58fb0 (updated README.md file, added context-awareness)
+
 ## Data Engineering and Processing
 
 Before making the data available to the API, I performed the following steps:

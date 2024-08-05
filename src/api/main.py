@@ -22,14 +22,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+agent = SQLAgent()
+
 
 class Query(BaseModel):
     question: str
 
 
 async def process_query_with_updates(question: str) -> AsyncGenerator[str, None]:
-    agent = SQLAgent()
-
     try:
         async for step, message in agent.process_query(question):
             yield json.dumps({"step": step, "message": message}) + "\n"

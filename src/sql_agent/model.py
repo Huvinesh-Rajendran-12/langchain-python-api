@@ -1,8 +1,8 @@
-from typing import Optional, Dict, List, Tuple, AsyncGenerator
+from typing import Optional, Dict, List, Tuple, AsyncGenerator, Any
 from langchain_anthropic import ChatAnthropic
 from langchain_community.utilities import SQLDatabase
 from langchain_community.agent_toolkits import create_sql_agent
-from langchain.tools import Tool
+from langchain.tools import StructuredTool
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.example_selectors.semantic_similarity import (
     SemanticSimilarityExampleSelector,
@@ -15,8 +15,6 @@ from langchain.schema import Document
 import zlib
 from src.config import settings
 import json
-import pandas as pd
-from tabulate import tabulate
 
 
 class SQLAgent:
@@ -42,51 +40,36 @@ class SQLAgent:
         self.conversation_history = []
         self.last_query_result = None
 
-        self.context_tool = Tool(
+        self.context_tool = StructuredTool.from_function(
             name="context_manager",
             func=self.manage_context,
             description="Use this tool to retrieve or update the conversation context. Input should be 'get' to retrieve context or 'update: <new_context>' to update it.",
         )
 
-        self.system_prompt = """You are a precise SQL expert with advanced context awareness. Given a question:
-        1. Create an efficient {dialect} query using only these tables: {table_names}
-        2. Execute the query and analyze results
-        3. Provide a concise, informative answer to the user
-        4. Use the context_manager tool when you need to retrieve or update conversation context
-        5. When query results contain multiple rows with numerous columns, generate a markdown table to display the data
-        Guidelines:
-        - Use indexes, avoid full table scans
-        - Limit to 10 results unless specified
-        - No DML statements
-        - For proper noun filters, use search_proper_nouns tool
-        - Join tables: event_url for event & company, homepage_base_url for company & people
-        - When dealing with queries related to country such as person_country, only use values you get from using the search_country tool
-        - If unrelated to the database, briefly explain why
-        - Prioritize clarity and brevity in your response
-        - Include only essential information and key insights
-        - Use bullet points for multiple items
-        - Offer to provide more details if needed
-        - Use the context_manager tool to maintain conversation context across queries
-        - For complex query results:
-          * Generate a markdown table
-          * Include column headers
-          * Align columns appropriately (left for text, right for numbers)
-          * If there are more than 10 rows, show only the first 10 and mention the total count
-        - After presenting the table, provide a brief summary or insights about the data
-
-        Use the following examples as a guide:
-        {examples}
-        """
+        self.search_country_tool = StructuredTool.from_function(
+            name="search_country",
+            func=self.search_country,
+            description="Search for countries in the database.",
+        )
+        self.search_proper_nouns_tool = StructuredTool.from_function(
+            name="search_proper_nouns",
+            func=self.search_proper_nouns,
+            description="Search for proper nouns in the database.",
+        )
 
         self.prompt = ChatPromptTemplate.from_messages(
             [
-                ("system", self.system_prompt),
+                ("system", settings.SYSTEM_PROMPT),
                 ("human", "{input}"),
                 MessagesPlaceholder("agent_scratchpad"),
             ]
         )
 
-        self.tools = [self.context_tool, self.search_country, self.search_proper_nouns]
+        self.custom_tools = [
+            self.context_tool,
+            self.search_country_tool,
+            self.search_proper_nouns_tool,
+        ]
 
         self.agent = create_sql_agent(
             llm=self.llm,
@@ -94,7 +77,7 @@ class SQLAgent:
             prompt=self.prompt,
             agent_type="tool-calling",
             verbose=True,
-            extra_tools=self.tools,
+            extra_tools=self.custom_tools,
         )
 
         self.vector_store = self.initialize_table_vector_store()
@@ -102,75 +85,8 @@ class SQLAgent:
         self.final_answer: Optional[str] = None
 
     def _initialize_example_selector(self):
-        examples = [
-            {
-                "input": "Find companies attending Oil & Gas related events over the next 12 months",
-                "query": """
-                SELECT DISTINCT ec.company_name
-                FROM event_company ec
-                JOIN (SELECT event_url FROM event_company WHERE event_industry = 'Oil & Gas') oe ON ec.event_url = oe.event_url
-                WHERE ec.event_start_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '12 months'
-                LIMIT 10
-                """,
-            },
-            {
-                "input": "Find sales people for companies attending events in Singapore over the next 9 months",
-                "query": """
-                SELECT DISTINCT pc.first_name, pc.last_name, pc.email_address
-                FROM people_company pc
-                JOIN event_company ec ON pc.company_name = ec.company_name
-                WHERE ec.event_country = 'Singapore'
-                  AND ec.event_start_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '9 months'
-                  AND pc.job_title ILIKE '%sales%'
-                LIMIT 10
-                """,
-            },
-            {
-                "input": "Find events that companies in Pharmaceuticals sector are attending",
-                "query": """
-                SELECT DISTINCT e.event_name, e.event_start_date, e.event_country
-                FROM event_company e
-                JOIN (SELECT DISTINCT company_name FROM people_company WHERE company_industry = 'Pharmaceuticals') p
-                ON e.company_name = p.company_name
-                ORDER BY e.event_start_date
-                LIMIT 10
-                """,
-            },
-            {
-                "input": "Get email addresses of people working for companies attending finance and banking events",
-                "query": """
-                SELECT DISTINCT pc.email_address
-                FROM people_company pc
-                JOIN event_company ec ON pc.company_name = ec.company_name
-                WHERE ec.event_industry IN ('Finance', 'Banking')
-                LIMIT 10
-                """,
-            },
-            {
-                "input": "List companies with revenue above $1 billion attending technology events",
-                "query": """
-                SELECT DISTINCT pc.company_name, pc.company_revenue
-                FROM people_company pc
-                JOIN event_company ec ON pc.company_name = ec.company_name
-                WHERE ec.event_industry = 'Technology'
-                  AND pc.company_revenue > 1000000000
-                ORDER BY pc.company_revenue DESC
-                LIMIT 10
-                """,
-            },
-            {
-                "input": "Find me people working in Singapore",
-                "query": """"
-                SELECT first_name, last_name, job_title, email_address, person_city
-                FROM people
-                WHERE person_country = 'Singapore'
-                LIMIT 10
-                """,
-            },
-        ]
-
         return SemanticSimilarityExampleSelector.from_examples(
-            examples, self.embeddings, FAISS, k=2, input_keys=["input"]
+            settings.EXAMPLES, self.embeddings, FAISS, k=2, input_keys=["input"]
         )
 
     def initialize_vector_stores(self):
@@ -205,34 +121,7 @@ class SQLAgent:
             formatted += f"Example {i}:\nInput: {example['input']}\nQuery: {example['query']}\n\n"
         return formatted.strip()
 
-    def _format_table(self, data: List[Dict]) -> str:
-        if not data:
-            return "No data available."
-
-        df = pd.DataFrame(data)
-
-        # Determine column alignments
-        alignments = [
-            "left" if df[col].dtype == "object" else "right" for col in df.columns
-        ]
-
-        # Generate the table
-        table = tabulate(
-            df.head(10),
-            headers="keys",
-            tablefmt="pipe",
-            showindex=False,
-            colalign=alignments,
-        )
-
-        if len(df) > 10:
-            table += f"\n\n*Showing 10 out of {len(df)} rows*"
-
-        return table
-
-    async def process_query(
-        self, question: str
-    ) -> AsyncGenerator[Tuple[str, str], None]:
+    async def process_query(self, question: str) -> AsyncGenerator[Tuple[str, str], None]:
         yield "Initializing", "Starting to process your query"
 
         try:
@@ -249,46 +138,78 @@ class SQLAgent:
             Current context:
             {context}
 
-            Generate a new SQL query based on the user query, the similar examples, and the current context."""
+            Remember: For follow-up questions, do not create or execute new SQL queries. Use the existing context to answer."""
 
             compressed_input = zlib.compress(enhanced_question.encode())
 
-            yield "Processing", "Analyzing the query and generating SQL"
+            yield "Processing", "Analyzing the query and formulating a response"
 
             query_results = None
             full_response = ""
 
-            async for chunk in self.agent.astream(
-                {
-                    "input": zlib.decompress(compressed_input).decode(),
-                    "examples": formatted_examples,
-                }
-            ):
-                if "actions" in chunk:
-                    for action in chunk["actions"]:
+            async for chunk in self.agent.astream({
+                "input": zlib.decompress(compressed_input).decode(),
+                "examples": formatted_examples,
+            }):
+                if 'actions' in chunk:
+                    for action in chunk['actions']:
                         if action.tool == "sql_db_query":
-                            query_results = json.loads(action.tool_input)
+                            query_results = action.tool_input
                         yield "Executing", f"Running action: {action.tool}"
-                elif "intermediate_steps" in chunk:
-                    for step in chunk["intermediate_steps"]:
+                elif 'intermediate_steps' in chunk:
+                    for step in chunk['intermediate_steps']:
                         yield "Intermediate Step", str(step)
-                elif "output" in chunk:
-                    if (
-                        query_results
-                        and len(query_results) > 1
-                        and len(query_results[0]) > 3
-                    ):
-                        table = self._format_table(query_results)
-                        full_response += f"Here are the query results:\n\n{table}\n\n"
-                    full_response += chunk["output"]
+                elif 'output' in chunk:
+                    try:
+                        if query_results and isinstance(query_results, list) and len(query_results) > 0:
+                            formatted_results = self._format_results(query_results)
+                            full_response += f"Here are the relevant results:\n\n{formatted_results}\n\n"
+                    except Exception as e:
+                        print(f"Debug: Error in formatting results: {str(e)}")
+                        print(traceback.format_exc())
+
+                    if isinstance(chunk['output'], list):
+                        for item in chunk['output']:
+                            if isinstance(item, dict) and 'text' in item:
+                                full_response += item['text']
+                            else:
+                                full_response += str(item)
+                    else:
+                        full_response += str(chunk['output'])
+
                     yield "Finalizing", "Preparing the final answer"
 
-            self.final_answer = full_response
-            self.last_query_result = full_response
-            self._update_conversation_history(question, full_response)
+            # Remove any SQL queries from the final answer
+            final_answer = self._remove_sql_queries(full_response)
+            self.final_answer = final_answer
+            self.last_query_result = final_answer
+            self._update_conversation_history(question, final_answer)
 
         except Exception as e:
+            print(f"Debug: Error in process_query: {str(e)}")
+            print(traceback.format_exc())
             yield "Error", f"An error occurred: {str(e)}"
+
+    def _remove_sql_queries(self, text: str) -> str:
+        # Simple function to remove anything that looks like an SQL query
+        lines = text.split('\n')
+        filtered_lines = [line for line in lines if not line.strip().upper().startswith(('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'ALTER', 'DROP', 'SQL', 'FROM', 'WHERE', 'LIMIT', 'LIKE', 'AND', 'OR', 'JOIN'))]
+        return '\n'.join(filtered_lines)
+
+
+    def _format_results(self, results: List[Dict]) -> str:
+        if not results or len(results) == 0:
+            return "No data available."
+
+        # Convert results to JSON string
+        table_data = json.dumps(results[:10])  # Limit to 10 rows
+
+        # Create a message with the table data and total count
+        message = f"<TableData>{table_data}</TableData>"
+        if len(results) > 10:
+            message += f"\n\n*Showing 10 out of {len(results)} rows*"
+
+        return message
 
     def extract_final_answer(self, result: Dict) -> str:
         if "output" in result:

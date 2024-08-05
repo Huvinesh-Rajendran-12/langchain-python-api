@@ -1,6 +1,5 @@
 import os
 from dotenv import load_dotenv
-from sqlalchemy import create_engine
 from langchain_anthropic import ChatAnthropic
 from langchain_community.utilities import SQLDatabase
 from langchain_community.agent_toolkits import create_sql_agent
@@ -12,7 +11,6 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain.schema import Document
 import time
 import zlib
-import json
 from collections import deque
 
 load_dotenv()
