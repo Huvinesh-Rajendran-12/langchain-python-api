@@ -46,6 +46,12 @@ class SQLAgent:
             description="Use this tool to retrieve or update the conversation context. Input should be 'get' to retrieve context or 'update: <new_context>' to update it.",
         )
 
+        self.query_decider = StructuredTool.from_function(
+                    name="query_decider",
+                    func=self.decide_query_generation,
+                    description="Use this tool to decide whether to generate a new SQL query or use existing context."
+                )
+
         self.search_country_tool = StructuredTool.from_function(
             name="search_country",
             func=self.search_country,
@@ -166,7 +172,6 @@ class SQLAgent:
                             full_response += f"Here are the relevant results:\n\n{formatted_results}\n\n"
                     except Exception as e:
                         print(f"Debug: Error in formatting results: {str(e)}")
-                        print(traceback.format_exc())
 
                     if isinstance(chunk['output'], list):
                         for item in chunk['output']:
@@ -187,7 +192,6 @@ class SQLAgent:
 
         except Exception as e:
             print(f"Debug: Error in process_query: {str(e)}")
-            print(traceback.format_exc())
             yield "Error", f"An error occurred: {str(e)}"
 
     def _remove_sql_queries(self, text: str) -> str:
@@ -227,6 +231,21 @@ class SQLAgent:
             return self._update_context(new_context)
         else:
             return "Invalid action. Use 'get' to retrieve context or 'update: <new_context>' to update it."
+
+
+    def decide_query_generation(self, question: str) -> str:
+        context = json.loads(self.manage_context("get"))
+        decision_prompt = f"""Given the following question and conversation context, decide if a new SQL query should be generated or if the existing context is sufficient to answer the question.
+
+        Question: {question}
+
+        Conversation Context:
+        {json.dumps(context, indent=2)}
+
+        Respond with either "generate_new_query" or "use_existing_context", followed by a brief explanation of your decision."""
+
+        decision = self.llm.predict(decision_prompt)
+        return decision
 
     def _get_context(self) -> str:
         context = {

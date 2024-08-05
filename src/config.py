@@ -111,22 +111,107 @@ class Settings(BaseSettings):
             ORDER BY e.event_start_date
             LIMIT 10
             """
+        },
+        {
+            "input": "which company has the highest headcount ?",
+            "query": """
+            SELECT company_name, n_employees
+            FROM company
+            WHERE n_employees IS NOT NULL
+            ORDER BY n_employees DESC
+            LIMIT 1
+            """
+        },
+        {
+            "input": "",
+            "query": """
+            SELECT AVG(company_revenue) as avg_revenue
+            FROM company
+            WHERE LOWER(company_industry) LIKE '%financial%' OR LOWER(company_industry) LIKE '%finance%'
+            """
+        },
+        {
+            "input": "Find me the events that are being attended by technology companies.",
+            "query": """
+            SELECT DISTINCT e.event_name, e.event_start_date, e.event_industry, c.company_name
+            FROM event e
+            JOIN company c ON e.event_url = c.event_url
+            WHERE LOWER(c.company_industry) LIKE '%technology%'
+            ORDER BY e.event_start_date
+            LIMIT 10
+            """
+        },
+        {
+            "input": "find me the email address of people who are working in Singapore for more than a year.",
+            "query": """
+            SELECT email_address, first_name, last_name, job_title, years_in_current_job
+            FROM people
+            WHERE person_country = 'Singapore'
+              AND years_in_current_job >= 1
+            ORDER BY years_in_current_job DESC
+            LIMIT 10
+            """
+        },
+        {
+            "input": "Find me the information about 3 companies for each event being held in the next 3 months.",
+            "query": """
+            WITH ranked_companies AS (
+              SELECT
+                e.event_name,
+                e.event_start_date,
+                e.event_industry,
+                c.company_name,
+                ROW_NUMBER() OVER (PARTITION BY e.event_name ORDER BY c.company_name) AS company_rank
+              FROM
+                event e
+              JOIN
+                company c ON e.event_url = c.event_url
+              WHERE
+                CAST(e.event_start_date AS DATE) BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '3 months'
+            )
+            SELECT
+              event_name,
+              event_start_date,
+              event_industry,
+              company_name
+            FROM
+              ranked_companies
+            WHERE
+              company_rank <= 3
+            ORDER BY
+              CAST(event_start_date AS DATE), event_name, company_rank
+            LIMIT 30
+            """
+        },
+        {
+            "input": "Find me the companies attending finance related events in 2025.",
+            "query": """
+            SELECT DISTINCT c.company_name, e.event_name, e.event_start_date, e.event_industry
+            FROM event e
+            JOIN company c ON e.event_url = c.event_url
+            WHERE (LOWER(e.event_industry) LIKE '%finance%' OR LOWER(e.event_industry) LIKE '%banking%')
+              AND SUBSTRING(e.event_start_date, 1, 4) = '2025'
+            ORDER BY e.event_start_date
+            LIMIT 10
+            """
         }
     ]
 
     @property
     def SYSTEM_PROMPT(self) -> str:
         return """You are a precise SQL expert with advanced context awareness. Given a question:
-        1. For initial questions:
-           a. Create an efficient {dialect} query using only these tables: {table_names}
-           b. Execute the query and analyze results
-           c. Provide a concise, informative answer to the user
-        2. For follow-up questions:
-           a. DO NOT create or execute new SQL queries
-           b. Use the context from previous questions and answers to respond
-           c. If you need more information that's not in the context, politely ask the user for clarification
-        3. Use the context_manager tool when you need to retrieve or update conversation context
-        4. When presenting query results:
+        1. ALWAYS USE the query_decider tool to determine if a new query is needed or if existing context can answer the question.
+        The return value of the tool would be either 'generate_new_query' or 'use_existing_content'.
+        2. If the return value is 'generate_new_query':
+            a. Create an efficient {dialect} query using only these tables: {table_names}
+            b. Execute the query and analyze results
+            c. Provide a concise, informative answer to the user
+        3. If the return value is 'use_existing_content':
+            a. DO NOT create or execute new SQL queries
+            b. Use the context from previous questions and answers to respond
+            c. If you need more information that's not in the context, politely ask the user for clarification
+        4. Use the context_manager tool when you need to retrieve or update conversation context
+        5. When presenting query results:
            a. For multiple rows with numerous columns, generate a beautiful HTML table using the following template:
               <div class="overflow-x-auto bg-gradient-to-br from-blue-900 to-teal-800 rounded-lg shadow-xl p-4">
                 <table class="w-full border-collapse">
@@ -148,7 +233,7 @@ class Settings(BaseSettings):
                 </table>
               </div>
            b. Ensure the table headers match the query result columns
-           c. Populate the table rows with the query results
+           c. Populate the table rows with the ALL OF THE query results, DO NOT MISS ANYTHING
            d. Include detailed information and key insights about the generated table.
            d. For simpler results or text responses, format the information as follows:
                          <div class="space-y-4 text-white">
@@ -162,7 +247,7 @@ class Settings(BaseSettings):
                            <p class="pl-5">Explanatory text goes here.</p>
                            <!-- Repeat the above structure for different sections as needed -->
                          </div>
-        5. After presenting the table, provide a brief summary or insights about the data
+        6. After presenting the table, provide a brief summary or insights about the data
         IMPORTANT GUIDELINES:
         - NEVER include SQL queries in your final answer to the user under any circumstances
         - For initial questions, use indexes and avoid full table scans
@@ -175,7 +260,7 @@ class Settings(BaseSettings):
         - Prioritize clarity and brevity in your responses
         - Include only detailed essential information and key insights
         - Use bullet points for multiple items
-        - Offer to provide more details if needed
+        - If it's necessary offer to provide more details otherwise DO NOT
         Use the following examples as a guide:
         {examples}
         """

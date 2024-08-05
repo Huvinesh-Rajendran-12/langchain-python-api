@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Depends
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -29,22 +29,24 @@ class Query(BaseModel):
     question: str
 
 
-async def process_query_with_updates(question: str) -> AsyncGenerator[str, None]:
+async def get_sql_agent():
+    agent = SQLAgent()
     try:
-        async for step, message in agent.process_query(question):
-            yield json.dumps({"step": step, "message": message}) + "\n"
+        yield agent
+    finally:
+        # Perform any cleanup if necessary
+        pass
 
-        final_answer = await agent.get_final_answer()
-        yield json.dumps({"step": "Final Answer", "message": final_answer}) + "\n"
-    except Exception as e:
-        yield json.dumps({"step": "Error", "message": str(e)}) + "\n"
+async def process_query_with_updates(question: str, agent: SQLAgent) -> AsyncGenerator[str, None]:
+    async for step, message in agent.process_query(question):
+        yield json.dumps({"step": step, "message": message}) + "\n"
 
+    final_answer = await agent.get_final_answer()
+    yield json.dumps({"step": "Final Answer", "message": final_answer}) + "\n"
 
 @app.post("/query")
-async def query_endpoint(query: Query):
-    return StreamingResponse(
-        process_query_with_updates(query.question), media_type="text/event-stream"
-    )
+async def query_endpoint(query: Query, agent: SQLAgent = Depends(get_sql_agent)):
+    return StreamingResponse(process_query_with_updates(query.question, agent), media_type="text/event-stream")
 
 
 if __name__ == "__main__":
