@@ -14,14 +14,14 @@ import re
 load_dotenv()
 
 # Get the database credentials from environment variables
-db_username = os.getenv('DB_USERNAME')
-db_password = os.getenv('DB_PASSWORD')
-db_host = os.getenv('DB_HOST')
-db_port = os.getenv('DB_PORT')
-db_name = os.getenv('DB_NAME')
+db_username = os.getenv("DB_USERNAME")
+db_password = os.getenv("DB_PASSWORD")
+db_host = os.getenv("DB_HOST")
+db_port = os.getenv("DB_PORT")
+db_name = os.getenv("DB_NAME")
 
 # Create database connection
-db_url = f'postgresql://{db_username}:{db_password}@{db_host}:{db_port}/{db_name}'
+db_url = f"postgresql://{db_username}:{db_password}@{db_host}:{db_port}/{db_name}"
 db = SQLDatabase.from_uri(db_url)
 
 # Set up OpenAI API
@@ -35,11 +35,13 @@ llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, api_key=openai_api_key)
 context = db.get_context()
 print(context["table_info"])
 
+
 def query_as_list(db, query):
     res = db.run(query)
     res = [el for sub in ast.literal_eval(res) for el in sub if el]
     res = [re.sub(r"\b\d+\b", "", string).strip() for string in res]
     return list(set(res))
+
 
 # Define system prompt
 system = """You are an agent designed to interact with a SQL database.
@@ -85,14 +87,38 @@ agent = create_sql_agent(
 
 # Example usage of the agent
 print(agent.invoke({"input": "Find all sales people working in Singapore"}))
-print(agent.invoke({"input": "Identify companies that are attending finance related events."}))
-print(agent.invoke({"input": "Identify companies that are attending banking related events."}))
-print(agent.invoke({"input": "Identify companies that are attending Oil & Gas related events."}))
-print(agent.invoke({"input": "Find sales people working for over a year in Singapore."}))
-print(agent.invoke({"input": "Find the people working the longest in their current company."}))
+print(
+    agent.invoke(
+        {"input": "Identify companies that are attending finance related events."}
+    )
+)
+print(
+    agent.invoke(
+        {"input": "Identify companies that are attending banking related events."}
+    )
+)
+print(
+    agent.invoke(
+        {"input": "Identify companies that are attending Oil & Gas related events."}
+    )
+)
+print(
+    agent.invoke({"input": "Find sales people working for over a year in Singapore."})
+)
+print(
+    agent.invoke(
+        {"input": "Find the people working the longest in their current company."}
+    )
+)
 print(agent.invoke({"input": "Find me the events happening in the next 6 months."}))
 print(agent.invoke({"input": "Find me the events happening in the next 12 months."}))
-print(agent.invoke({"input": "Find me the companies that are attending events in the next 3 months."}))
+print(
+    agent.invoke(
+        {
+            "input": "Find me the companies that are attending events in the next 3 months."
+        }
+    )
+)
 print(agent.invoke({"input": "Find events that already over."}))
 
 # Async example (uncomment to use)

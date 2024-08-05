@@ -19,13 +19,13 @@ load_dotenv()
 cohere_api_key = os.getenv("COHERE_API_KEY")
 print(cohere_api_key)
 
-db_username = os.getenv('DB_USERNAME')
-db_password = os.getenv('DB_PASSWORD')
-db_host = os.getenv('DB_HOST')
-db_port = os.getenv('DB_PORT')
-db_name = os.getenv('DB_NAME')
+db_username = os.getenv("DB_USERNAME")
+db_password = os.getenv("DB_PASSWORD")
+db_host = os.getenv("DB_HOST")
+db_port = os.getenv("DB_PORT")
+db_name = os.getenv("DB_NAME")
 
-db_url = f'postgresql://{db_username}:{db_password}@{db_host}:{db_port}/{db_name}'
+db_url = f"postgresql://{db_username}:{db_password}@{db_host}:{db_port}/{db_name}"
 
 db = SQLDatabase.from_uri(db_url)
 
@@ -151,13 +151,37 @@ async for chunk in agent.astream(
     pprint.pprint(chunk, depth=5)
 
 # More example queries
-print(agent.invoke({"input": "Identify companies that are attending finance related events."}))
-print(agent.invoke({"input": "Identify companies that are attending banking related events."}))
-print(agent.invoke({"input": "Identify companies that are attending Oil & Gas related events."}))
+print(
+    agent.invoke(
+        {"input": "Identify companies that are attending finance related events."}
+    )
+)
+print(
+    agent.invoke(
+        {"input": "Identify companies that are attending banking related events."}
+    )
+)
+print(
+    agent.invoke(
+        {"input": "Identify companies that are attending Oil & Gas related events."}
+    )
+)
 print(agent.invoke({"input": "Find all sales people working in Singapore"}))
-print(agent.invoke({"input": "Find sales people working for over a year in Singapore."}))
-print(agent.invoke({"input": "Find the people working the longest in their current company."}))
+print(
+    agent.invoke({"input": "Find sales people working for over a year in Singapore."})
+)
+print(
+    agent.invoke(
+        {"input": "Find the people working the longest in their current company."}
+    )
+)
 print(agent.invoke({"input": "Find me the events happening in the next 6 months."}))
 print(agent.invoke({"input": "Find me the events happening in the next 12 months."}))
-print(agent.invoke({"input": "Find me the companies that are attending events in the next 3 months."}))
+print(
+    agent.invoke(
+        {
+            "input": "Find me the companies that are attending events in the next 3 months."
+        }
+    )
+)
 print(agent.invoke({"input": "Find events that already over."}))

@@ -17,13 +17,13 @@ load_dotenv()
 mistral_api_key = os.getenv("MISTRAL_API_KEY")
 print(mistral_api_key)
 
-db_username = os.getenv('DB_USERNAME')
-db_password = os.getenv('DB_PASSWORD')
-db_host = os.getenv('DB_HOST')
-db_port = os.getenv('DB_PORT')
-db_name = os.getenv('DB_NAME')
+db_username = os.getenv("DB_USERNAME")
+db_password = os.getenv("DB_PASSWORD")
+db_host = os.getenv("DB_HOST")
+db_port = os.getenv("DB_PORT")
+db_name = os.getenv("DB_NAME")
 
-db_url = f'postgresql://{db_username}:{db_password}@{db_host}:{db_port}/{db_name}'
+db_url = f"postgresql://{db_username}:{db_password}@{db_host}:{db_port}/{db_name}"
 db = SQLDatabase.from_uri(db_url)
 
 # Set up language model
@@ -65,6 +65,7 @@ agent = create_sql_agent(
     verbose=True,
 )
 
+
 # Async function to stream agent responses
 async def stream_agent_response(input_text):
     chunks = []
@@ -74,9 +75,11 @@ async def stream_agent_response(input_text):
         pprint.pprint(chunk, depth=5)
     return chunks
 
+
 # Function to run agent queries
 def run_agent_query(input_text):
     return agent.invoke({"input": input_text})
+
 
 # Example usage
 if __name__ == "__main__":
@@ -94,7 +97,7 @@ if __name__ == "__main__":
         "Find me the events happening in the next 6 months.",
         "Find me the events happening in the next 12 months.",
         "Find me the companies that are attending events in the next 3 months.",
-        "Find events that already over."
+        "Find events that already over.",
     ]
 
     for query in queries:
