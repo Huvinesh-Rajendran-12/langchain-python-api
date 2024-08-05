@@ -47,10 +47,10 @@ class SQLAgent:
         )
 
         self.query_decider = StructuredTool.from_function(
-                    name="query_decider",
-                    func=self.decide_query_generation,
-                    description="Use this tool to decide whether to generate a new SQL query or use existing context."
-                )
+            name="query_decider",
+            func=self.decide_query_generation,
+            description="Use this tool to decide whether to generate a new SQL query or use existing context.",
+        )
 
         self.search_country_tool = StructuredTool.from_function(
             name="search_country",
@@ -127,7 +127,9 @@ class SQLAgent:
             formatted += f"Example {i}:\nInput: {example['input']}\nQuery: {example['query']}\n\n"
         return formatted.strip()
 
-    async def process_query(self, question: str) -> AsyncGenerator[Tuple[str, str], None]:
+    async def process_query(
+        self, question: str
+    ) -> AsyncGenerator[Tuple[str, str], None]:
         yield "Initializing", "Starting to process your query"
 
         try:
@@ -153,34 +155,40 @@ class SQLAgent:
             query_results = None
             full_response = ""
 
-            async for chunk in self.agent.astream({
-                "input": zlib.decompress(compressed_input).decode(),
-                "examples": formatted_examples,
-            }):
-                if 'actions' in chunk:
-                    for action in chunk['actions']:
+            async for chunk in self.agent.astream(
+                {
+                    "input": zlib.decompress(compressed_input).decode(),
+                    "examples": formatted_examples,
+                }
+            ):
+                if "actions" in chunk:
+                    for action in chunk["actions"]:
                         if action.tool == "sql_db_query":
                             query_results = action.tool_input
                         yield "Executing", f"Running action: {action.tool}"
-                elif 'intermediate_steps' in chunk:
-                    for step in chunk['intermediate_steps']:
+                elif "intermediate_steps" in chunk:
+                    for step in chunk["intermediate_steps"]:
                         yield "Intermediate Step", str(step)
-                elif 'output' in chunk:
+                elif "output" in chunk:
                     try:
-                        if query_results and isinstance(query_results, list) and len(query_results) > 0:
+                        if (
+                            query_results
+                            and isinstance(query_results, list)
+                            and len(query_results) > 0
+                        ):
                             formatted_results = self._format_results(query_results)
                             full_response += f"Here are the relevant results:\n\n{formatted_results}\n\n"
                     except Exception as e:
                         print(f"Debug: Error in formatting results: {str(e)}")
 
-                    if isinstance(chunk['output'], list):
-                        for item in chunk['output']:
-                            if isinstance(item, dict) and 'text' in item:
-                                full_response += item['text']
+                    if isinstance(chunk["output"], list):
+                        for item in chunk["output"]:
+                            if isinstance(item, dict) and "text" in item:
+                                full_response += item["text"]
                             else:
                                 full_response += str(item)
                     else:
-                        full_response += str(chunk['output'])
+                        full_response += str(chunk["output"])
 
                     yield "Finalizing", "Preparing the final answer"
 
@@ -196,10 +204,33 @@ class SQLAgent:
 
     def _remove_sql_queries(self, text: str) -> str:
         # Simple function to remove anything that looks like an SQL query
-        lines = text.split('\n')
-        filtered_lines = [line for line in lines if not line.strip().upper().startswith(('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'ALTER', 'DROP', 'SQL', 'FROM', 'WHERE', 'LIMIT', 'LIKE', 'AND', 'OR', 'JOIN'))]
-        return '\n'.join(filtered_lines)
-
+        lines = text.split("\n")
+        filtered_lines = [
+            line
+            for line in lines
+            if not line.strip()
+            .upper()
+            .startswith(
+                (
+                    "SELECT",
+                    "INSERT",
+                    "UPDATE",
+                    "DELETE",
+                    "CREATE",
+                    "ALTER",
+                    "DROP",
+                    "SQL",
+                    "FROM",
+                    "WHERE",
+                    "LIMIT",
+                    "LIKE",
+                    "AND",
+                    "OR",
+                    "JOIN",
+                )
+            )
+        ]
+        return "\n".join(filtered_lines)
 
     def _format_results(self, results: List[Dict]) -> str:
         if not results or len(results) == 0:
@@ -231,7 +262,6 @@ class SQLAgent:
             return self._update_context(new_context)
         else:
             return "Invalid action. Use 'get' to retrieve context or 'update: <new_context>' to update it."
-
 
     def decide_query_generation(self, question: str) -> str:
         context = json.loads(self.manage_context("get"))

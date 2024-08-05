@@ -110,7 +110,7 @@ class Settings(BaseSettings):
             WHERE LOWER(e.event_industry) LIKE '%finance%' OR LOWER(e.event_industry) LIKE '%banking%'
             ORDER BY e.event_start_date
             LIMIT 10
-            """
+            """,
         },
         {
             "input": "which company has the highest headcount ?",
@@ -120,7 +120,7 @@ class Settings(BaseSettings):
             WHERE n_employees IS NOT NULL
             ORDER BY n_employees DESC
             LIMIT 1
-            """
+            """,
         },
         {
             "input": "",
@@ -128,7 +128,7 @@ class Settings(BaseSettings):
             SELECT AVG(company_revenue) as avg_revenue
             FROM company
             WHERE LOWER(company_industry) LIKE '%financial%' OR LOWER(company_industry) LIKE '%finance%'
-            """
+            """,
         },
         {
             "input": "Find me the events that are being attended by technology companies.",
@@ -139,7 +139,7 @@ class Settings(BaseSettings):
             WHERE LOWER(c.company_industry) LIKE '%technology%'
             ORDER BY e.event_start_date
             LIMIT 10
-            """
+            """,
         },
         {
             "input": "find me the email address of people who are working in Singapore for more than a year.",
@@ -150,7 +150,7 @@ class Settings(BaseSettings):
               AND years_in_current_job >= 1
             ORDER BY years_in_current_job DESC
             LIMIT 10
-            """
+            """,
         },
         {
             "input": "Find me the information about 3 companies for each event being held in the next 3 months.",
@@ -181,7 +181,7 @@ class Settings(BaseSettings):
             ORDER BY
               CAST(event_start_date AS DATE), event_name, company_rank
             LIMIT 30
-            """
+            """,
         },
         {
             "input": "Find me the companies attending finance related events in 2025.",
@@ -193,8 +193,8 @@ class Settings(BaseSettings):
               AND SUBSTRING(e.event_start_date, 1, 4) = '2025'
             ORDER BY e.event_start_date
             LIMIT 10
-            """
-        }
+            """,
+        },
     ]
 
     @property

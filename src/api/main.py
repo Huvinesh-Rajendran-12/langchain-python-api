@@ -37,16 +37,23 @@ async def get_sql_agent():
         # Perform any cleanup if necessary
         pass
 
-async def process_query_with_updates(question: str, agent: SQLAgent) -> AsyncGenerator[str, None]:
+
+async def process_query_with_updates(
+    question: str, agent: SQLAgent
+) -> AsyncGenerator[str, None]:
     async for step, message in agent.process_query(question):
         yield json.dumps({"step": step, "message": message}) + "\n"
 
     final_answer = await agent.get_final_answer()
     yield json.dumps({"step": "Final Answer", "message": final_answer}) + "\n"
 
+
 @app.post("/query")
 async def query_endpoint(query: Query, agent: SQLAgent = Depends(get_sql_agent)):
-    return StreamingResponse(process_query_with_updates(query.question, agent), media_type="text/event-stream")
+    return StreamingResponse(
+        process_query_with_updates(query.question, agent),
+        media_type="text/event-stream",
+    )
 
 
 if __name__ == "__main__":
