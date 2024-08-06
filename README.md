@@ -168,11 +168,9 @@ Balancing query accuracy with performance, especially for large datasets, requir
 - **Solutions**:
 
   1. Implemented an efficient caching strategy to balance data freshness with quick responses.
-  2. Optimized database queries through careful indexing and query planning.
-  3. Developed a tiered approach to handle queries of varying complexity.
-  4. Implemented lazy loading and pagination for large result sets.
+  2. Developed a tiered approach to handle queries of varying complexity.
 
-- **Outcome**: Significantly improved response times while maintaining the ability to handle complex queries on large datasets.
+- **Outcome**: Significantly improved response times while maintaining the ability to handle complex queries on large datasets. But, in some cases the response time is still quite slow.
 
 ### 5. Ensuring Data Consistency Across Different Tables
 
