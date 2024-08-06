@@ -172,25 +172,7 @@ Balancing query accuracy with performance, especially for large datasets, requir
 
 - **Outcome**: Significantly improved response times while maintaining the ability to handle complex queries on large datasets. But, in some cases the response time is still quite slow.
 
-### 5. Ensuring Data Consistency Across Different Tables
-
-Maintaining data integrity and consistency across the events, companies, and people tables presented several challenges.
-
-- **Challenges**:
-
-  - Handling inconsistencies in the source data
-  - Maintaining referential integrity, especially with derived data
-  - Dealing with updates and potential conflicts
-
-- **Solutions**:
-
-  1. Implemented robust data cleaning and normalization processes.
-  2. Developed a system of checks and balances to maintain referential integrity.
-  3. Created a comprehensive error handling system to gracefully manage data inconsistencies.
-
-- **Outcome**: Improved overall data quality and reliability, ensuring consistent and accurate responses from the API.
-
-### 6. Balancing Accuracy with Response Time
+### 5. Balancing Accuracy with Response Time
 
 Finding the right trade-off between the accuracy of natural language understanding, query generation, and the speed of response was a constant challenge.
 
@@ -203,8 +185,7 @@ Finding the right trade-off between the accuracy of natural language understandi
 - **Solutions**:
 
   1. Implemented a multi-tiered approach to handle queries of different complexities.
-  2. Developed an adaptive system that adjusts processing depth based on query complexity and user preferences.
-  3. Optimized the AI model's performance through fine-tuning and prompt engineering.
+  2. Optimized the AI model's performance through prompt engineering.
 
 - **Outcome**: Achieved a balance between accuracy and speed, providing quick responses for simple queries while maintaining the capability to handle complex requests accurately.
 
