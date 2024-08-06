@@ -2,7 +2,7 @@
 
 This repository contains the backend API for my ByteGenie FullStack Developer Test application. The API allows users to interact with events, company, and people data through natural language queries.
 
-## Technology Stack
+## 🚀 Technology Stack
 
 - Python 3.9+
 - FastAPI
@@ -11,153 +11,214 @@ This repository contains the backend API for my ByteGenie FullStack Developer Te
 - Langchain
 - Anthropic Claude API
 
-## Installation and Setup
+## 🛠️ Installation and Setup
 
-1. Clone the repository:
+1. **Clone the repository:**
 
-   ```
+   ```bash
    git clone https://github.com/Huvinesh-Rajendran-12/bytegenie-python-api.git
    cd bytegenie-python-api
    ```
 
-2. Create and activate a virtual environment:
+2. **Create and activate a virtual environment:**
 
-   ```
+   ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
    ```
 
-3. Install dependencies:
+3. **Install dependencies:**
 
-   ```
+   ```bash
    pip install -r requirements.txt
    ```
 
-4. Set up environment variables:
-   Create a `.env` file in the root directory and add the following:
+4. **Set up environment variables:**
+   Create a `.env` file in the root directory with the following content:
 
-   ```
-   export DB_USERNAME=bytegenie_user
-   export DB_PASSWORD=bytegenie_pass
-   export DB_HOST=localhost
-   export DB_PORT=5432
-   export DB_NAME=bytegenie_db
-   export ANTHROPIC_API_KEY=your-api-key
-   export ANTHROPIC_LLM_MODEL=claude-3-5-sonnet-20240620
-   export ANTHROPIC_LLM_TEMPERATURE=0
-   export ANTHROPIC_LLM_MAX_TOKENS=4096
-   export API_HOST=0.0.0.0
-   export API_PORT=8000
-   export ENABLE_CACHE=true
-   export TOKENIZERS_PARALLELISM=true
-   export EMBEDDING_MODEL=mixedbread-ai/mxbai-embed-large-v1
+   ```env
+   DB_USERNAME=bytegenie_user
+   DB_PASSWORD=bytegenie_pass
+   DB_HOST=localhost
+   DB_PORT=5432
+   DB_NAME=bytegenie_db
+   ANTHROPIC_API_KEY=your-api-key
+   ANTHROPIC_LLM_MODEL=claude-3-5-sonnet-20240620
+   ANTHROPIC_LLM_TEMPERATURE=0
+   ANTHROPIC_LLM_MAX_TOKENS=4096
+   API_HOST=0.0.0.0
+   API_PORT=8000
+   ENABLE_CACHE=true
+   TOKENIZERS_PARALLELISM=true
+   EMBEDDING_MODEL=mixedbread-ai/mxbai-embed-large-v1
    ```
 
-5. Initialize the database:
-   Assuming database is intialized already, if not please visit the bytegenie-db repository for further instructions.
+5. **Initialize the database:**
+   Assuming the database is initialized already. If not, please visit the bytegenie-db repository for further instructions.
 
-6. Run the API:
-   ```
+6. **Run the API:**
+   ```bash
    uvicorn src.api.main:app
    ```
 
 The API should now be running on `http://localhost:8000`.
 
-## Data Engineering and Processing
+## 🧹 Data Engineering and Processing
 
 Before making the data available to the API, I performed the following steps:
 
-### Data cleaning and normalization
+### Data Cleaning and Normalization
 
-Note : The data analysis and augmentation were handled by GPT4o. In an ideal world, I would prefer to handle it through Claude 3.5 Sonnet but as of now it cannot handle large datasets.
+> Note: The data analysis and augmentation were handled by GPT4o. Ideally, I would prefer to handle it through Claude 3.5 Sonnet, but it currently cannot handle large datasets.
 
-#### company_info data
+#### Company Info Data
 
-1. Any special characters from the company_name column was removed. Row 595 with company_name #XcelerAI was cleaned to be just XcelerAI.
-2. The null values in company_industry were filled by analysing the company_name and company_overview columns but even then there were some additonal rows that couldn't be filled, those were filled with 'Unknown' value.
-3. Then the n_employees column were standardized to use a range of numbers. Any additonal wordings such as 'employees' were found and removed. The single value rows were also converted to any standard range of numbers. The empty values were filled with 'Unknown' value.
-4. The company_revenue data was standardized to be only in million dollar value, because there were some rows with billion dollar value which was converted to be reflected in millions. The empty rows are filled with 'Unknown' value.
-5. The company_founding_year was converted into a string instead of floating values, and the values were converted to reflect integer values, and the missing rows were filled with 'Unknown' value.
-6. The homepage_url was filled by analysing the homepage_base_url.
-7. The rest of the missing values in this dataset was filled with 'Unknown' value.
+- Removed special characters from company names
+- Filled null values in company_industry
+- Standardized n_employees column
+- Normalized company_revenue data
+- Converted company_founding_year to string format
+- Filled missing homepage_url values
 
-### event_info data
+#### Event Info Data
 
-1. The null values in the event_end_date column (only 2 null-values) were filled by me visiting the event url and finding those event end dates.
-2. The null values in the event_venue column (only 3 null-values) were filled by me visiting the event url and finding the event venues.
-3. The null value in the event_description column (only 1 null-value) were filled by me asking Perplexity.ai about the event information and description.
-4. The null values in the event_country column (22 null-values) were filled by analysing the event_venue column.
-5. Finally, derived an additional column called event_industry based on event_name and event_description columns.
-6. There are no null values remaining.
+- Filled null values in event_end_date, event_venue, and event_description
+- Derived event_country from event_venue where missing
+- Added event_industry column based on event_name and event_description
 
-### people_info data
+#### People Info Data
 
-1. This dataset was the hardest to engineer and augment.
-2. The null values in person_city, person_state, and person_country columns were filled with 'Unknown' value.
-3. The null values in email_pattern were filled with 'Unknown' values.
-4. An additional column was derived from email_pattern called email_address by analysing the person's name, email_pattern and homepage_base_url.
-5. Finally, the duration_in_current_job was standardized and any redundant value which was also present in duration_in_current_job was removed. The null values in both of these columns were filled with 'Unknown' value.
+- Filled null values in location columns with 'Unknown'
+- Derived email_address from email_pattern, person's name, and homepage_base_url
+- Standardized duration_in_current_job and duration_in_current_company
 
-## Main Functionalities
-
-The API provides the following key functionalities:
+## 🔍 Main Functionalities
 
 1. Natural language query processing
 2. SQL query generation based on user input
 3. Data retrieval from the database
 4. Response formatting and optimization
 
-## Key Challenges I Faced
+## 🏋️ Key Challenges I Faced
 
 During the development of the API, particularly the SQLAgent component, I encountered several significant challenges:
 
-#### Accurately interpreting natural language queries:
+### 1. Choosing the Right AI Model
 
-Dealing with ambiguity in user queries was a major hurdle. For example, a query like "Find recent events" could be interpreted in multiple ways (e.g., last week, last month, or last year).
-Maintaining context across multi-turn conversations proved complex, especially when users referred to previous queries or results.
+The selection of an appropriate AI model was crucial for the success of this project. I conducted extensive experiments with various proprietary and open-source AI models to find the best fit for function calling and SQL query generation.
 
-#### Generating efficient SQL queries for complex user requests:
+- **Models Tested**:
 
-Translating natural language into optimized SQL queries was challenging, especially for complex requests involving multiple joins, subqueries, or aggregations.
-Ensuring that generated queries were efficient and didn't overload the database required careful consideration of query plans and index usage.
-Handling edge cases, such as queries that could potentially return very large result sets, needed special attention to prevent performance issues.
+  - Claude 3.5 Sonnet
+  - Command R+
+  - GPT4o
+  - Mistral 8x22
 
-#### Handling edge cases and ambiguous queries:
+- **Evaluation Criteria**:
 
-Dealing with queries that had no clear SQL equivalent or required data not present in the database was challenging.
-Providing meaningful responses to overly broad or vague queries while still offering useful information was a delicate balance.
-Implementing fallback mechanisms for when the primary query generation failed, without compromising the quality of results.
+  - Accuracy in understanding natural language queries
+  - Ability to generate correct SQL queries
+  - Handling of complex and ambiguous requests
+  - Performance with large datasets
 
-#### Optimizing response times for large datasets:
+- **Outcome**: After rigorous testing, Claude 3.5 Sonnet emerged as the most capable model for handling sophisticated and complex tasks in our specific use case.
 
-Implementing efficient caching strategies that balanced fresh data with quick responses was complex.
-Optimizing database queries and result processing for datasets with millions of records required careful tuning and indexing strategies.
-Managing memory efficiently, especially when dealing with large result sets that needed to be processed before returning to the user.
+### 2. Addressing Hallucinations
 
-#### Ensuring data consistency across different tables:
+Even with advanced models like Claude 3.5 Sonnet, hallucinations posed a significant challenge in the early stages of development.
 
-Maintaining referential integrity across the events, companies, and people tables, especially with derived data, was challenging.
-Implementing strategies to handle inconsistencies in the source data without breaking the system or producing incorrect results required careful error handling and data cleaning processes.
+- **Problem**: The model would sometimes generate incorrect or non-existent information, especially for ambiguous queries.
 
-#### Implementing effective context management for multi-turn conversations:
+- **Solution**:
 
-Designing a system that could effectively store and retrieve relevant context from previous queries in a conversation was complex.
-Balancing the amount of context to retain versus the computational and storage overhead it introduced required careful consideration.
-Determining when to use context and when to treat a query as a new conversation added another layer of complexity.
+  1. Engineered a well-defined prompt to restrict hallucinations and focus the model on the given tasks.
+  2. Developed custom tools (e.g., search_country) to provide verified information to the model.
+  3. Implemented strict validation of model outputs against the actual database schema and content.
 
-#### Balancing accuracy with response time:
+- **Outcome**: Significantly reduced hallucinations, improving the reliability and accuracy of the API responses.
 
-Finding the right trade-off between the accuracy of natural language understanding and query generation, and the speed of response was a constant challenge.
-Implementing a system that could provide quick responses for simple queries while still being capable of handling complex requests required a multi-tiered approach.
+### 3. Generating Correct SQL Queries for Complex User Requests
 
-## Future Improvements
+Translating natural language into accurate and efficient SQL queries, especially for complex requests, was a major hurdle.
 
-If I had more time, I would improve the backend in the following ways:
+- **Challenges**:
 
-1. Implement query caching for faster response times
-2. Add more sophisticated error handling and query validation
-3. Develop a feedback loop to improve natural language understanding over time
-4. Optimize database queries further using advanced indexing techniques
-5. Implement rate limiting and authentication for production use
-6. Add support for more complex queries involving multiple data sources
-7. Develop a comprehensive test suite for all API endpoints and edge cases
+  - Handling multi-table joins
+  - Correctly interpreting user intent for ambiguous queries
+  - Generating optimized queries for large datasets
+
+- **Solution**:
+
+  1. Created a comprehensive set of example SQL queries paired with natural language inputs.
+  2. Implemented a vector database (FAISS) to store and quickly retrieve relevant query examples.
+  3. Developed a system where the model uses retrieved similar queries as a reference for generating new queries.
+
+- **Outcome**: Improved accuracy and consistency in SQL query generation, even for complex and unusual requests.
+
+### 4. Optimizing Response Times for Large Datasets
+
+Balancing query accuracy with performance, especially for large datasets, required significant optimization efforts.
+
+- **Challenges**:
+
+  - Long processing times for complex queries
+  - High memory usage when dealing with large result sets
+  - Maintaining responsiveness under varying load conditions
+
+- **Solutions**:
+
+  1. Implemented an efficient caching strategy to balance data freshness with quick responses.
+  2. Optimized database queries through careful indexing and query planning.
+  3. Developed a tiered approach to handle queries of varying complexity.
+  4. Implemented lazy loading and pagination for large result sets.
+
+- **Outcome**: Significantly improved response times while maintaining the ability to handle complex queries on large datasets.
+
+### 5. Ensuring Data Consistency Across Different Tables
+
+Maintaining data integrity and consistency across the events, companies, and people tables presented several challenges.
+
+- **Challenges**:
+
+  - Handling inconsistencies in the source data
+  - Maintaining referential integrity, especially with derived data
+  - Dealing with updates and potential conflicts
+
+- **Solutions**:
+
+  1. Implemented robust data cleaning and normalization processes.
+  2. Developed a system of checks and balances to maintain referential integrity.
+  3. Created a comprehensive error handling system to gracefully manage data inconsistencies.
+
+- **Outcome**: Improved overall data quality and reliability, ensuring consistent and accurate responses from the API.
+
+### 6. Balancing Accuracy with Response Time
+
+Finding the right trade-off between the accuracy of natural language understanding, query generation, and the speed of response was a constant challenge.
+
+- **Challenges**:
+
+  - Longer processing times for more accurate results
+  - User expectation for quick responses
+  - Varying complexity of user queries
+
+- **Solutions**:
+
+  1. Implemented a multi-tiered approach to handle queries of different complexities.
+  2. Developed an adaptive system that adjusts processing depth based on query complexity and user preferences.
+  3. Optimized the AI model's performance through fine-tuning and prompt engineering.
+
+- **Outcome**: Achieved a balance between accuracy and speed, providing quick responses for simple queries while maintaining the capability to handle complex requests accurately.
+
+These challenges required a combination of creative problem-solving, advanced natural language processing techniques, efficient database design, and a deep understanding of the domain. Overcoming them involved continuous testing, refinement, and learning from real-world usage patterns and edge cases encountered during development.
+
+## 🚀 Future Improvements
+
+1. Implement multi-turn conversation capabilities
+2. Enhance query caching for faster response times
+3. Add more sophisticated error handling and query validation
+4. Develop a feedback loop to improve natural language understanding
+5. Further optimize database queries using advanced indexing techniques
+6. Implement rate limiting and authentication for production use
+7. Add support for more complex queries involving multiple data sources
+8. Develop a comprehensive test suite for all API endpoints and edge cases
