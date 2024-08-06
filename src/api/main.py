@@ -38,7 +38,7 @@ async def process_query_with_updates(
 
 
 @app.post("/query")
-async def query_endpoint(query: Query, agent: SQLAgent = Depends(get_sql_agent)):
+async def query_endpoint(query: Query):
     return StreamingResponse(
         process_query_with_updates(query.question, agent),
         media_type="text/event-stream",
