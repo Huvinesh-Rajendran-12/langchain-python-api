@@ -10,8 +10,6 @@ app = FastAPI()
 
 origins = [
     "http://localhost:3000",  # React default port
-    "http://localhost:8000",  # Another common development port
-    "https://yourdomain.com",  # Your production domain
 ]
 
 app.add_middleware(
@@ -27,15 +25,6 @@ agent = SQLAgent()
 
 class Query(BaseModel):
     question: str
-
-
-async def get_sql_agent():
-    agent = SQLAgent()
-    try:
-        yield agent
-    finally:
-        # Perform any cleanup if necessary
-        pass
 
 
 async def process_query_with_updates(
