@@ -194,10 +194,11 @@ These challenges required a combination of creative problem-solving, advanced na
 ## 🚀 Future Improvements
 
 1. Implement multi-turn conversation capabilities
-2. Enhance query caching for faster response times
-3. Add more sophisticated error handling and query validation
-4. Develop a feedback loop to improve natural language understanding
-5. Further optimize database queries using advanced indexing techniques
-6. Implement rate limiting and authentication for production use
-7. Add support for more complex queries involving multiple data sources
-8. Develop a comprehensive test suite for all API endpoints and edge cases
+2. Explore the 'astream_events' v2 of the API to further include streaming tokens from particular events such as 'on_chat_model_stream' to improve the response time. Currently the response time is too slow.
+3. Enhance query caching for faster response times
+4. Add more sophisticated error handling and query validation
+5. Develop a feedback loop to improve natural language understanding
+6. Further optimize database queries using advanced indexing techniques
+7. Implement rate limiting and authentication for production use
+8. Add support for more complex queries involving multiple data sources
+9. Develop a comprehensive test suite for all API endpoints and edge cases
