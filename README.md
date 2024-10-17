@@ -1,4 +1,4 @@
-# ByteGenie Python API
+# Langchain Python API
 
 This repository contains the backend API for my ByteGenie FullStack Developer Test application. The API allows users to interact with events, company, and people data through natural language queries.
 
@@ -16,8 +16,8 @@ This repository contains the backend API for my ByteGenie FullStack Developer Te
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/Huvinesh-Rajendran-12/bytegenie-python-api.git
-   cd bytegenie-python-api
+   git clone https://github.com/Huvinesh-Rajendran-12/langchain-python-api.git
+   cd langchain-python-api
    ```
 
 2. **Create and activate a virtual environment:**
@@ -37,11 +37,11 @@ This repository contains the backend API for my ByteGenie FullStack Developer Te
    Create a `.env` file in the root directory with the following content:
 
    ```env
-   DB_USERNAME=bytegenie_user
-   DB_PASSWORD=bytegenie_pass
+   DB_USERNAME=user
+   DB_PASSWORD=password
    DB_HOST=localhost
    DB_PORT=5432
-   DB_NAME=bytegenie_db
+   DB_NAME=database
    ANTHROPIC_API_KEY=your-api-key
    ANTHROPIC_LLM_MODEL=claude-3-5-sonnet-20240620
    ANTHROPIC_LLM_TEMPERATURE=0
