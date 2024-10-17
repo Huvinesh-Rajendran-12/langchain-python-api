@@ -1,6 +1,6 @@
 # Langchain Python API
 
-This repository contains the backend API for my ByteGenie FullStack Developer Test application. The API allows users to interact with events, company, and people data through natural language queries.
+This repository contains the backend API for my SQL Agent application. The API allows users to interact with events, company, and people data through natural language queries.
 
 ## 🚀 Technology Stack
 
@@ -54,7 +54,7 @@ This repository contains the backend API for my ByteGenie FullStack Developer Te
    ```
 
 5. **Initialize the database:**
-   Assuming the database is initialized already. If not, please visit the bytegenie-db repository for further instructions.
+   Assuming the database is initialized already. If not, please visit the database repository for further instructions.
 
 6. **Run the API:**
    ```bash
